@@ -101,6 +101,9 @@ COPY apps/api/templates templates/
 COPY apps/api/package.json package.json
 COPY apps/api/bin ./bin/
 
+# Copy resilient entrypoint
+COPY apps/api/bin/docker-entrypoint-api-resilient.sh ./bin/docker-entrypoint-api-resilient.sh
+
 # Copy built frontend from previous stage
 COPY --from=frontend-builder /app/apps/web/build/client /code/static/web
 
@@ -162,7 +165,7 @@ stderr_logfile=/dev/stderr\n\
 stderr_logfile_maxbytes=0\n\
 \n\
 [program:django]\n\
-command=/code/bin/docker-entrypoint-api.sh\n\
+command=/code/bin/docker-entrypoint-api-resilient.sh\n\
 directory=/code\n\
 autostart=true\n\
 autorestart=true\n\
