@@ -208,10 +208,6 @@ RUN echo '#!/bin/bash' > /code/start.sh && \
     echo 'echo "Running database migrations..."' >> /code/start.sh && \
     echo 'python manage.py migrate --noinput' >> /code/start.sh && \
     echo '' >> /code/start.sh && \
-    echo '# Collect static files' >> /code/start.sh && \
-    echo 'echo "Collecting static files..."' >> /code/start.sh && \
-    echo 'python manage.py collectstatic --noinput --clear' >> /code/start.sh && \
-    echo '' >> /code/start.sh && \
     echo '# Start supervisor' >> /code/start.sh && \
     echo 'echo "Starting services..."' >> /code/start.sh && \
     echo 'exec /usr/bin/supervisord -c /etc/supervisor/conf.d/plane.conf' >> /code/start.sh && \
