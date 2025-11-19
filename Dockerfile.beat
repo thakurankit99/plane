@@ -49,8 +49,17 @@ RUN mkdir -p /code/plane/logs && \
 
 EXPOSE 8001
 
+# Create keep-alive script
+RUN printf '#!/bin/bash\n\
+while true; do\n\
+  sleep 180\n\
+  curl -s http://localhost:8001/ > /dev/null 2>&1 || true\n\
+done\n' > /code/keep-alive.sh && chmod +x /code/keep-alive.sh
+
 # Create a simple health check server that runs alongside celery beat
 RUN printf '#!/bin/bash\n\
+# Start keep-alive in background\n\
+/code/keep-alive.sh &\n\
 # Start a simple HTTP server for health checks in background\n\
 python -m http.server 8001 &\n\
 # Run celery beat in foreground\n\

@@ -52,7 +52,14 @@ RUN mkdir -p /code/plane/logs /var/log/supervisor /var/run /etc/supervisor/conf.
     chmod +x ./bin/* && \
     chmod -R 777 /code
 
-# Configure supervisor for API + Worker
+# Create self-ping script to keep service awake
+RUN printf '#!/bin/bash\n\
+while true; do\n\
+  sleep 180\n\
+  curl -s http://localhost:8000/api/instances/ > /dev/null 2>&1 || true\n\
+done\n' > /code/keep-alive.sh && chmod +x /code/keep-alive.sh
+
+# Configure supervisor for API + Worker + Keep-Alive
 RUN printf '[supervisord]\n\
 nodaemon=true\n\
 user=root\n\
@@ -78,6 +85,16 @@ autorestart=true\n\
 stdout_logfile=/dev/stdout\n\
 stdout_logfile_maxbytes=0\n\
 stderr_logfile=/dev/stderr\n\
+stderr_logfile_maxbytes=0\n\
+\n\
+[program:keep-alive]\n\
+command=/code/keep-alive.sh\n\
+directory=/code\n\
+autostart=true\n\
+autorestart=true\n\
+stdout_logfile=/dev/null\n\
+stdout_logfile_maxbytes=0\n\
+stderr_logfile=/dev/null\n\
 stderr_logfile_maxbytes=0\n' > /etc/supervisor/conf.d/plane.conf
 
 # Health check

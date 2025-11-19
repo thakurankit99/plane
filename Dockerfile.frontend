@@ -55,6 +55,13 @@ RUN apk add --no-cache gettext
 COPY apps/web/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY --from=builder /app/apps/web/build/client /usr/share/nginx/html
 
+# Create self-ping script to keep service awake
+RUN printf '#!/bin/sh\n\
+while true; do\n\
+  sleep 180\n\
+  curl -s http://localhost:3000/ > /dev/null 2>&1 || true\n\
+done\n' > /keep-alive.sh && chmod +x /keep-alive.sh
+
 # Create env config template
 RUN echo 'window.ENV = {' > /usr/share/nginx/html/env-config.js.template && \
     echo '  VITE_API_BASE_URL: "${VITE_API_BASE_URL}",' >> /usr/share/nginx/html/env-config.js.template && \
@@ -71,6 +78,8 @@ RUN echo 'window.ENV = {' > /usr/share/nginx/html/env-config.js.template && \
 RUN printf '#!/bin/sh\n\
 # Substitute environment variables in config\n\
 envsubst < /usr/share/nginx/html/env-config.js.template > /usr/share/nginx/html/env-config.js\n\
+# Start keep-alive in background\n\
+/keep-alive.sh &\n\
 # Start nginx\n\
 exec nginx -g "daemon off;"\n' > /docker-entrypoint.sh && \
     chmod +x /docker-entrypoint.sh
