@@ -105,7 +105,7 @@ COPY apps/api/bin ./bin/
 COPY --from=frontend-builder /app/apps/web/build/client /code/static/web
 
 # Create necessary directories and set permissions
-RUN mkdir -p /code/plane/logs /code/static && \
+RUN mkdir -p /code/plane/logs /code/static /var/log/supervisor /var/run && \
     chmod +x ./bin/* && \
     chmod -R 777 /code
 
