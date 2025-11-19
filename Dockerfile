@@ -192,13 +192,32 @@ stderr_logfile=/dev/stderr
 stderr_logfile_maxbytes=0
 EOF
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+# Health check - longer grace period for migrations
+HEALTHCHECK --interval=30s --timeout=10s --start-period=180s --retries=5 \
     CMD curl -f http://localhost:3000/ || exit 1
 
 EXPOSE 3000
 
-# Run migrations and start supervisor
-CMD python manage.py migrate --noinput && \
-    python manage.py collectstatic --noinput --clear && \
-    /usr/bin/supervisord -c /etc/supervisor/conf.d/plane.conf
+# Create startup script
+RUN cat > /code/start.sh << 'EOFSTART'
+#!/bin/bash
+set -e
+
+echo "Starting Plane deployment..."
+
+# Run migrations (this may take a while on first deploy)
+echo "Running database migrations..."
+python manage.py migrate --noinput
+
+# Collect static files
+echo "Collecting static files..."
+python manage.py collectstatic --noinput --clear
+
+# Start supervisor
+echo "Starting services..."
+exec /usr/bin/supervisord -c /etc/supervisor/conf.d/plane.conf
+EOFSTART
+
+RUN chmod +x /code/start.sh
+
+CMD ["/code/start.sh"]
