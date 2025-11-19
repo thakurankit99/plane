@@ -26,17 +26,15 @@ if not instance:
         latest_version="v0.23.0",
         last_checked_at=timezone.now(),
         is_setup_done=True,
-        is_activated=True,
         is_telemetry_enabled=False,
         is_support_required=False,
     )
     print(f"Instance created: {instance.instance_name}")
-elif not instance.is_setup_done or not instance.is_activated:
-    print("Activating existing instance...")
+elif not instance.is_setup_done:
+    print("Marking instance setup as complete...")
     instance.is_setup_done = True
-    instance.is_activated = True
     instance.save()
-    print(f"Instance activated: {instance.instance_name}")
+    print(f"Instance setup completed: {instance.instance_name}")
 else:
     print(f"Instance already configured: {instance.instance_name}")
 PYEOF
