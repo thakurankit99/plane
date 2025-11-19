@@ -1,0 +1,91 @@
+# =============================================================================
+# Plane API + Worker - For Render/Koyeb Free Tier
+# =============================================================================
+FROM python:3.12.10-alpine
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /code
+
+# Install system dependencies
+RUN apk update && apk upgrade && \
+    apk add --no-cache \
+    libpq \
+    libxslt \
+    xmlsec \
+    ca-certificates \
+    openssl \
+    libffi-dev \
+    bash \
+    supervisor \
+    curl
+
+# Install Python build dependencies and packages
+COPY apps/api/requirements.txt ./
+COPY apps/api/requirements ./requirements
+
+RUN apk add --no-cache --virtual .build-deps \
+    g++ \
+    gcc \
+    cargo \
+    git \
+    make \
+    postgresql-dev \
+    libc-dev \
+    linux-headers && \
+    pip install -r requirements.txt --compile --no-cache-dir && \
+    apk del .build-deps && \
+    rm -rf /var/cache/apk/*
+
+# Copy Django application
+COPY apps/api/manage.py manage.py
+COPY apps/api/plane plane/
+COPY apps/api/templates templates/
+COPY apps/api/package.json package.json
+COPY apps/api/bin ./bin/
+COPY apps/api/bin/docker-entrypoint-api-resilient.sh ./bin/docker-entrypoint-api-resilient.sh
+
+# Create necessary directories
+RUN mkdir -p /code/plane/logs /var/log/supervisor /var/run /etc/supervisor/conf.d && \
+    chmod +x ./bin/* && \
+    chmod -R 777 /code
+
+# Configure supervisor for API + Worker
+RUN printf '[supervisord]\n\
+nodaemon=true\n\
+user=root\n\
+logfile=/dev/stdout\n\
+logfile_maxbytes=0\n\
+pidfile=/var/run/supervisord.pid\n\
+\n\
+[program:django]\n\
+command=/code/bin/docker-entrypoint-api-resilient.sh\n\
+directory=/code\n\
+autostart=true\n\
+autorestart=true\n\
+stdout_logfile=/dev/stdout\n\
+stdout_logfile_maxbytes=0\n\
+stderr_logfile=/dev/stderr\n\
+stderr_logfile_maxbytes=0\n\
+\n\
+[program:celery-worker]\n\
+command=celery -A plane worker -l info --concurrency=1\n\
+directory=/code\n\
+autostart=true\n\
+autorestart=true\n\
+stdout_logfile=/dev/stdout\n\
+stdout_logfile_maxbytes=0\n\
+stderr_logfile=/dev/stderr\n\
+stderr_logfile_maxbytes=0\n' > /etc/supervisor/conf.d/plane.conf
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \
+    CMD curl -f http://localhost:8000/api/instances/ || exit 1
+
+EXPOSE 8000
+
+# Run migrations and start supervisor
+CMD python manage.py migrate --noinput && \
+    /usr/bin/supervisord -c /etc/supervisor/conf.d/plane.conf

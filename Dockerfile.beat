@@ -1,0 +1,64 @@
+# =============================================================================
+# Plane Celery Beat - For Render/Koyeb Free Tier
+# =============================================================================
+FROM python:3.12.10-alpine
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /code
+
+# Install system dependencies
+RUN apk update && apk upgrade && \
+    apk add --no-cache \
+    libpq \
+    libxslt \
+    xmlsec \
+    ca-certificates \
+    openssl \
+    libffi-dev \
+    bash
+
+# Install Python build dependencies and packages
+COPY apps/api/requirements.txt ./
+COPY apps/api/requirements ./requirements
+
+RUN apk add --no-cache --virtual .build-deps \
+    g++ \
+    gcc \
+    cargo \
+    git \
+    make \
+    postgresql-dev \
+    libc-dev \
+    linux-headers && \
+    pip install -r requirements.txt --compile --no-cache-dir && \
+    apk del .build-deps && \
+    rm -rf /var/cache/apk/*
+
+# Copy Django application
+COPY apps/api/manage.py manage.py
+COPY apps/api/plane plane/
+COPY apps/api/templates templates/
+COPY apps/api/package.json package.json
+
+# Create necessary directories
+RUN mkdir -p /code/plane/logs && \
+    chmod -R 777 /code
+
+EXPOSE 8001
+
+# Create a simple health check server that runs alongside celery beat
+RUN printf '#!/bin/bash\n\
+# Start a simple HTTP server for health checks in background\n\
+python -m http.server 8001 &\n\
+# Run celery beat in foreground\n\
+exec celery -A plane beat -l info\n' > /code/start-beat.sh && \
+    chmod +x /code/start-beat.sh
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8001/ || exit 1
+
+CMD ["/code/start-beat.sh"]
