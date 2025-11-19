@@ -58,12 +58,15 @@ done\n' > /code/keep-alive.sh && chmod +x /code/keep-alive.sh
 
 # Create a simple health check server that runs alongside celery beat
 RUN printf '#!/bin/bash\n\
+# Start HTTP server first (Render needs to detect port quickly)\n\
+python -m http.server 8001 &\n\
+HTTP_PID=$!\n\
+# Wait for HTTP server to be ready\n\
+sleep 2\n\
 # Start keep-alive in background\n\
 /code/keep-alive.sh &\n\
-# Start a simple HTTP server for health checks in background\n\
-python -m http.server 8001 &\n\
 # Run celery beat in foreground\n\
-exec celery -A plane beat -l info\n' > /code/start-beat.sh && \
+celery -A plane beat -l info\n' > /code/start-beat.sh && \
     chmod +x /code/start-beat.sh
 
 # Health check
