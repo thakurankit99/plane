@@ -199,25 +199,22 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=180s --retries=5 \
 EXPOSE 3000
 
 # Create startup script
-RUN cat > /code/start.sh << 'EOFSTART'
-#!/bin/bash
-set -e
-
-echo "Starting Plane deployment..."
-
-# Run migrations (this may take a while on first deploy)
-echo "Running database migrations..."
-python manage.py migrate --noinput
-
-# Collect static files
-echo "Collecting static files..."
-python manage.py collectstatic --noinput --clear
-
-# Start supervisor
-echo "Starting services..."
-exec /usr/bin/supervisord -c /etc/supervisor/conf.d/plane.conf
-EOFSTART
-
-RUN chmod +x /code/start.sh
+RUN echo '#!/bin/bash' > /code/start.sh && \
+    echo 'set -e' >> /code/start.sh && \
+    echo '' >> /code/start.sh && \
+    echo 'echo "Starting Plane deployment..."' >> /code/start.sh && \
+    echo '' >> /code/start.sh && \
+    echo '# Run migrations (this may take a while on first deploy)' >> /code/start.sh && \
+    echo 'echo "Running database migrations..."' >> /code/start.sh && \
+    echo 'python manage.py migrate --noinput' >> /code/start.sh && \
+    echo '' >> /code/start.sh && \
+    echo '# Collect static files' >> /code/start.sh && \
+    echo 'echo "Collecting static files..."' >> /code/start.sh && \
+    echo 'python manage.py collectstatic --noinput --clear' >> /code/start.sh && \
+    echo '' >> /code/start.sh && \
+    echo '# Start supervisor' >> /code/start.sh && \
+    echo 'echo "Starting services..."' >> /code/start.sh && \
+    echo 'exec /usr/bin/supervisord -c /etc/supervisor/conf.d/plane.conf' >> /code/start.sh && \
+    chmod +x /code/start.sh
 
 CMD ["/code/start.sh"]
