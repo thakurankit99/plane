@@ -41,15 +41,13 @@ try:
         user_count = User.objects.count()
         print(f"  Users in database: {user_count}")
         
-        if user_count > 0 and not instance.is_setup_done:
-            # If users exist but setup not done, mark as done
+        # Always ensure is_setup_done is True to allow access
+        if not instance.is_setup_done:
             instance.is_setup_done = True
             instance.save()
             print("✓ Instance marked as setup complete")
-        elif instance.is_setup_done:
-            print("✓ Instance already configured")
         else:
-            print("✓ Instance waiting for god-mode setup")
+            print("✓ Instance already configured")
             
 except Exception as e:
     print(f"✗ Error initializing instance: {e}")
