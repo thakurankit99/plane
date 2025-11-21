@@ -106,7 +106,7 @@ export const RoleSetupStep: FC<Props> = observer(({ handleStepChange }) => {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-10">
       {/* Header */}
-      <CommonOnboardingHeader title="What's your role?" description="Let's set up Plane for how you work." />
+      <CommonOnboardingHeader title="What's your role?" description="Let's set up AadyaBoard for how you work." />
       {/* Role Selection */}
       <div className="flex flex-col gap-3">
         <p className="text-sm font-medium text-custom-text-400">Select one</p>

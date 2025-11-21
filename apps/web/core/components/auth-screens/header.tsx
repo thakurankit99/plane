@@ -37,7 +37,7 @@ export const AuthHeader = observer(({ type }: AuthHeaderProps) => {
   const enableSignUpConfig = config?.enable_signup ?? false;
   return (
     <>
-      <PageHead title={t(authContentMap[type].pageTitle) + " - Plane"} />
+      <PageHead title={t(authContentMap[type].pageTitle) + " - AadyaBoard"} />
       <div className="flex items-center justify-between gap-6 w-full flex-shrink-0 sticky top-0">
         <Link href="/">
           <PlaneLockup height={20} width={95} className="text-custom-text-100" />

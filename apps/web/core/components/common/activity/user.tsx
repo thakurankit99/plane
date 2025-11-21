@@ -24,7 +24,7 @@ export const User: FC<TUser> = observer((props) => {
   return (
     <>
       {customUserName || actorDetail?.display_name.includes("-intake") ? (
-        <span className="text-custom-text-100 font-medium">{customUserName || "Plane"}</span>
+        <span className="text-custom-text-100 font-medium">{customUserName || "AadyaBoard"}</span>
       ) : (
         <Link
           href={`/${workspaceDetail?.slug}/profile/${actorDetail?.id}`}

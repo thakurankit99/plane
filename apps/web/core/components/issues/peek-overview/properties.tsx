@@ -152,7 +152,7 @@ export const PeekOverviewProperties: FC<IPeekOverviewProperties> = observer((pro
                 userIds={createdByDetails?.display_name.includes("-intake") ? null : createdByDetails?.id}
               />
               <span className="flex-grow truncate  leading-5">
-                {createdByDetails?.display_name.includes("-intake") ? "Plane" : createdByDetails?.display_name}
+                {createdByDetails?.display_name.includes("-intake") ? "AadyaBoard" : createdByDetails?.display_name}
               </span>
             </div>
           </div>

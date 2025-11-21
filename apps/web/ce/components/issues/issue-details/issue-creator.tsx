@@ -22,7 +22,7 @@ export const IssueCreatorDisplay: FC<TIssueUser> = (props) => {
   return (
     <>
       {customUserName ? (
-        <span className="text-custom-text-100 font-medium">{customUserName || "Plane"}</span>
+        <span className="text-custom-text-100 font-medium">{customUserName || "AadyaBoard"}</span>
       ) : (
         <Link
           href={`/${activity?.workspace_detail?.slug}/profile/${activity?.actor_detail?.id}`}
