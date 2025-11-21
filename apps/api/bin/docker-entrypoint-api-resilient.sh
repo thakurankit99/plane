@@ -9,20 +9,62 @@ python manage.py wait_for_db
 # Wait for migrations
 python manage.py wait_for_migrations
 
-# Initialize instance if not exists
-echo "Checking instance configuration..."
-python manage.py register_instance "plane-koyeb" 2>/dev/null || echo "Instance registration skipped"
-python manage.py configure_instance 2>/dev/null || echo "Instance configuration skipped"
-
-# Ensure instance is marked as setup done
-python -c "
+# Initialize instance - proper error handling
+echo "Initializing Plane instance..."
+python manage.py shell <<'PYEOF'
+import sys
+import secrets
+from django.utils import timezone
 from plane.license.models import Instance
-instance = Instance.objects.first()
-if instance and not instance.is_setup_done:
-    instance.is_setup_done = True
-    instance.save()
-    print('Instance setup marked as complete')
-" 2>/dev/null || echo "Instance check skipped"
+from plane.db.models import User
 
+try:
+    instance = Instance.objects.first()
+    
+    if not instance:
+        print("Creating new Plane instance...")
+        instance = Instance.objects.create(
+            instance_name="Plane Instance",
+            instance_id=secrets.token_hex(12),
+            current_version="v0.23.0",
+            latest_version="v0.23.0",
+            last_checked_at=timezone.now(),
+            is_setup_done=False,  # False initially so god-mode setup can run
+            is_telemetry_enabled=False,
+            is_support_required=False,
+        )
+        print(f"✓ Instance created: {instance.instance_name} (ID: {instance.instance_id})")
+        print("✓ Instance ready for god-mode setup at /god-mode")
+    else:
+        print(f"✓ Instance found: {instance.instance_name} (ID: {instance.instance_id})")
+        # Check if there are any users
+        user_count = User.objects.count()
+        print(f"  Users in database: {user_count}")
+        
+        if user_count > 0 and not instance.is_setup_done:
+            # If users exist but setup not done, mark as done
+            instance.is_setup_done = True
+            instance.save()
+            print("✓ Instance marked as setup complete")
+        elif instance.is_setup_done:
+            print("✓ Instance already configured")
+        else:
+            print("✓ Instance waiting for god-mode setup")
+            
+except Exception as e:
+    print(f"✗ Error initializing instance: {e}")
+    sys.exit(1)
+PYEOF
+
+if [ $? -ne 0 ]; then
+    echo "Failed to initialize instance. Exiting..."
+    exit 1
+fi
+
+# Configure instance settings
+echo "Configuring instance settings..."
+python manage.py configure_instance || echo "Warning: Instance configuration may already exist"
+
+echo "Instance initialization complete!"
 echo "Starting Gunicorn server..."
 exec gunicorn -w "${GUNICORN_WORKERS:-1}" -k uvicorn.workers.UvicornWorker plane.asgi:application --bind 0.0.0.0:"${PORT:-8000}" --max-requests 1200 --max-requests-jitter 1000 --access-logfile - --timeout 120
