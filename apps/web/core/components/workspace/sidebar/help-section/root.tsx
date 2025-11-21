@@ -95,13 +95,6 @@ export const HelpMenuRoot = observer(() => {
             <span className="text-xs">{t("whats_new")}</span>
           </button>
         </CustomMenu.MenuItem>
-        <CustomMenu.MenuItem
-          onClick={() => window.open("https://go.plane.so/p-discord", "_blank", "noopener,noreferrer")}
-        >
-          <div className="flex items-center gap-x-2 rounded text-xs">
-            <span className="text-xs">Discord</span>
-          </div>
-        </CustomMenu.MenuItem>
         <div className="px-1 pt-2 mt-1 text-xs text-custom-text-200 border-t border-custom-border-200">
           <PlaneVersionNumber />
         </div>
