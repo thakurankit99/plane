@@ -132,6 +132,26 @@ class MagicSignUpEndpoint(View):
         email = request.POST.get("email", "").strip().lower()
         next_path = request.POST.get("next_path")
 
+        # FIX: If only email is provided (no code), generate and send magic link
+        if code == "" and email != "":
+            try:
+                from django.core.validators import validate_email
+                validate_email(email)
+                adapter = MagicCodeProvider(request=request, key=email)
+                key, token = adapter.initiate()
+                # Send the magic link email
+                magic_link.delay(email, key, token)
+                # Redirect back with success message
+                params = {"email_sent": "true"}
+                url = get_safe_redirect_url(
+                    base_url=base_host(request=request, is_app=True),
+                    next_path=next_path,
+                    params=params,
+                )
+                return HttpResponseRedirect(url)
+            except Exception:
+                pass
+
         if code == "" or email == "":
             exc = AuthenticationException(
                 error_code=AUTHENTICATION_ERROR_CODES["MAGIC_SIGN_UP_EMAIL_CODE_REQUIRED"],
