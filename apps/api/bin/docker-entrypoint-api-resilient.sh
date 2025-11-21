@@ -29,12 +29,12 @@ try:
             current_version="v0.23.0",
             latest_version="v0.23.0",
             last_checked_at=timezone.now(),
-            is_setup_done=False,  # False initially so god-mode setup can run
+            is_setup_done=True,  # Set to True to allow frontend access
             is_telemetry_enabled=False,
             is_support_required=False,
         )
         print(f"✓ Instance created: {instance.instance_name} (ID: {instance.instance_id})")
-        print("✓ Instance ready for god-mode setup at /god-mode")
+        print("✓ Instance ready - you can now create admin account")
     else:
         print(f"✓ Instance found: {instance.instance_name} (ID: {instance.instance_id})")
         # Check if there are any users
