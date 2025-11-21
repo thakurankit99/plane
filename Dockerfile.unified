@@ -166,6 +166,16 @@ autorestart=true\n\
 stdout_logfile=/dev/stdout\n\
 stdout_logfile_maxbytes=0\n\
 stderr_logfile=/dev/stderr\n\
+stderr_logfile_maxbytes=0\n\
+\n\
+[program:celery-beat]\n\
+command=celery -A plane beat -l info\n\
+directory=/code\n\
+autostart=true\n\
+autorestart=true\n\
+stdout_logfile=/dev/stdout\n\
+stdout_logfile_maxbytes=0\n\
+stderr_logfile=/dev/stderr\n\
 stderr_logfile_maxbytes=0\n' > /etc/supervisord.conf
 
 EXPOSE 8000
