@@ -236,7 +236,7 @@ def send_email_notification(issue_id, notification_data, receiver_id, email_noti
             summary = "Updates were made to the issue by"
 
             # Send the mail
-            subject = f"{issue.project.identifier}-{issue.sequence_id} {remove_unwanted_characters(issue.name)}"
+            subject = f"[AadyaBoard] {issue.project.identifier}-{issue.sequence_id} {remove_unwanted_characters(issue.name)}"
             context = {
                 "data": template_data,
                 "summary": summary,
