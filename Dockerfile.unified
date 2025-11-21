@@ -1,0 +1,176 @@
+# =============================================================================
+# Unified Plane Deployment - Frontend + API on Same Domain
+# =============================================================================
+
+# Stage 1: Build Frontend
+FROM node:22-alpine AS frontend-builder
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
+WORKDIR /app
+
+RUN apk add --no-cache libc6-compat git
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+COPY packages ./packages
+COPY apps/web ./apps/web
+
+RUN corepack enable pnpm && \
+    pnpm install --frozen-lockfile && \
+    pnpm turbo run build --filter=web
+
+# Stage 2: Setup API
+FROM python:3.12-alpine AS api-setup
+
+WORKDIR /code
+
+RUN apk add --no-cache \
+    libpq \
+    libxslt \
+    xmlsec \
+    ca-certificates \
+    openssl \
+    libffi-dev \
+    bash \
+    curl
+
+COPY apps/api/requirements.txt ./
+COPY apps/api/requirements ./requirements
+
+RUN apk add --no-cache --virtual .build-deps \
+    g++ \
+    gcc \
+    cargo \
+    git \
+    make \
+    postgresql-dev \
+    libc-dev \
+    linux-headers && \
+    pip install -r requirements.txt --compile --no-cache-dir && \
+    apk del .build-deps
+
+COPY apps/api/manage.py manage.py
+COPY apps/api/plane plane/
+COPY apps/api/templates templates/
+COPY apps/api/package.json package.json
+COPY apps/api/bin ./bin/
+
+RUN chmod +x ./bin/*
+
+# Stage 3: Final unified image with nginx
+FROM python:3.12-alpine
+
+WORKDIR /code
+
+# Install runtime dependencies + nginx
+RUN apk add --no-cache \
+    libpq \
+    libxslt \
+    xmlsec \
+    ca-certificates \
+    openssl \
+    bash \
+    curl \
+    nginx \
+    supervisor
+
+# Copy Python packages from api-setup
+COPY --from=api-setup /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=api-setup /usr/local/bin /usr/local/bin
+
+# Copy API code
+COPY --from=api-setup /code /code
+
+# Copy built frontend
+COPY --from=frontend-builder /app/apps/web/build/client /var/www/html
+
+# Create nginx configuration
+RUN mkdir -p /etc/nginx/http.d && \
+    rm -f /etc/nginx/http.d/default.conf
+
+COPY <<'EOF' /etc/nginx/http.d/plane.conf
+server {
+    listen 8000;
+    server_name _;
+    client_max_body_size 20M;
+
+    # Frontend - serve static files
+    location / {
+        root /var/www/html;
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache";
+    }
+
+    # API - proxy to Gunicorn
+    location /api/ {
+        proxy_pass http://127.0.0.1:9000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_redirect off;
+    }
+
+    # Auth endpoints
+    location /auth/ {
+        proxy_pass http://127.0.0.1:9000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_redirect off;
+    }
+
+    # Static files for API (if any)
+    location /static/ {
+        alias /code/static/;
+    }
+}
+EOF
+
+# Create supervisor configuration
+RUN printf '[supervisord]\n\
+nodaemon=true\n\
+user=root\n\
+logfile=/dev/stdout\n\
+logfile_maxbytes=0\n\
+pidfile=/var/run/supervisord.pid\n\
+\n\
+[program:nginx]\n\
+command=nginx -g "daemon off;"\n\
+autostart=true\n\
+autorestart=true\n\
+stdout_logfile=/dev/stdout\n\
+stdout_logfile_maxbytes=0\n\
+stderr_logfile=/dev/stderr\n\
+stderr_logfile_maxbytes=0\n\
+\n\
+[program:django]\n\
+command=/code/bin/docker-entrypoint-api-resilient.sh\n\
+directory=/code\n\
+autostart=true\n\
+autorestart=true\n\
+stdout_logfile=/dev/stdout\n\
+stdout_logfile_maxbytes=0\n\
+stderr_logfile=/dev/stderr\n\
+stderr_logfile_maxbytes=0\n\
+environment=PORT="9000"\n\
+\n\
+[program:celery-worker]\n\
+command=celery -A plane worker -l info\n\
+directory=/code\n\
+autostart=true\n\
+autorestart=true\n\
+stdout_logfile=/dev/stdout\n\
+stdout_logfile_maxbytes=0\n\
+stderr_logfile=/dev/stderr\n\
+stderr_logfile_maxbytes=0\n' > /etc/supervisord.conf
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD curl -fsS http://127.0.0.1:8000/ >/dev/null || exit 1
+
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
