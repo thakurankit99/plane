@@ -24,9 +24,9 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 
 app.conf.beat_schedule = {
     # Intra day recurring jobs
-    "check-every-five-minutes-to-send-email-notifications": {
+    "check-every-minute-to-send-email-notifications": {
         "task": "plane.bgtasks.email_notification_task.stack_email_notification",
-        "schedule": crontab(minute="*/5"),  # Every 5 minutes
+        "schedule": crontab(minute="*"),  # Every 1 minute for near-instant notifications
     },
     "run-every-6-hours-for-instance-trace": {
         "task": "plane.license.bgtasks.tracer.instance_traces",
