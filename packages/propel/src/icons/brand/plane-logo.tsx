@@ -12,6 +12,7 @@ export const PlaneLogo: React.FC<ISvgIcons & { theme?: "light" | "dark" }> = ({
   // Use inline SVG for AadyaBoard logo
   // For dark theme/dark UI, use white logo
   // For light theme/light UI, use dark logo
+  // Default to light theme (dark logo) if theme is not provided
   const isDark = theme === "dark";
   
   return (

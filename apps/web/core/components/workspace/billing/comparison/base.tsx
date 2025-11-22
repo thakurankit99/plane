@@ -21,6 +21,10 @@ export const shouldRenderPlanDetail = (planKey: TPlanePlans) => {
   if (planKey === "free") return false;
   // Plane one plan is not longer available
   if (planKey === "one") return false;
+  // Hide paid plans (Pro, Business, Enterprise) for self-hosted community edition
+  if (planKey === "pro") return false;
+  if (planKey === "business") return false;
+  if (planKey === "enterprise") return false;
   return true;
 };
 
