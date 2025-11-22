@@ -68,12 +68,7 @@ export const SidebarHelpSection: React.FC<WorkspaceHelpSectionProps> = observer(
             maxHeight="lg"
             closeOnSelect
           >
-            <CustomMenu.MenuItem onClick={() => window.open("https://go.plane.so/p-docs", "_blank")}>
-              <div className="flex items-center gap-x-2 rounded text-xs">
-                <PageIcon className="h-3.5 w-3.5 text-custom-text-200" height={14} width={14} />
-                <span className="text-xs">{t("documentation")}</span>
-              </div>
-            </CustomMenu.MenuItem>
+            {/* Documentation link removed - add your own documentation URL if needed */}
             {config?.intercom_app_id && config?.is_intercom_enabled && (
               <CustomMenu.MenuItem>
                 <button
