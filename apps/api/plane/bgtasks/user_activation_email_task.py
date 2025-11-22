@@ -13,6 +13,7 @@ from celery import shared_task
 from plane.db.models import User
 from plane.license.utils.instance_value import get_email_configuration
 from plane.utils.exception_logger import log_exception
+from plane.bgtasks.email_utils import add_logo_to_context
 
 
 @shared_task
@@ -22,7 +23,7 @@ def user_activation_email(current_site, user_id):
         user = User.objects.get(id=user_id)
         subject = f"{user.first_name or user.display_name or user.email} has been activated on AadyaBoard"
 
-        context = {"email": str(user.email), "profile_url": current_site + "/profile"}
+        context = add_logo_to_context({"email": str(user.email), "profile_url": current_site + "/profile"})
 
         # Send email to user
         html_content = render_to_string("emails/user/user_activation.html", context)

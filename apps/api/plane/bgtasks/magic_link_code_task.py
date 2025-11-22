@@ -30,7 +30,16 @@ def magic_link(email, key, token):
 
         # Send the mail
         subject = f"Your unique AadyaBoard login code is {token}"
-        context = {"code": token, "email": email}
+        
+        # Get WEB_URL from settings
+        from django.conf import settings
+        web_url = getattr(settings, 'WEB_URL', 'https://jira.aadyatechnovate.com')
+        
+        context = {
+            "code": token, 
+            "email": email,
+            "logo_url": f"{web_url}/assets/plane-logos/aadya-logo-dark.svg"
+        }
 
         html_content = render_to_string("emails/auth/magic_signin.html", context)
         text_content = strip_tags(html_content)

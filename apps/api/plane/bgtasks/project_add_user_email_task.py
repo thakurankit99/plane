@@ -15,6 +15,7 @@ from plane.license.utils.instance_value import get_email_configuration
 from plane.utils.exception_logger import log_exception
 from plane.db.models import ProjectMember
 from plane.db.models import User
+from plane.bgtasks.email_utils import add_logo_to_context
 
 
 @shared_task
@@ -31,13 +32,13 @@ def project_add_user_email(current_site, project_member_id, invitor_id):
         member_email = project_member.member.email
         project_url = f"{current_site}/{project_member.workspace.slug}/projects/{project_member.project_id}/issues"
         # set the context
-        context = {
+        context = add_logo_to_context({
             "project_name": project_name,
             "workspace_name": workspace_name,
             "email": member_email,
             "inviter_first_name": inviter_first_name,
             "project_url": project_url,
-        }
+        })
 
         # Get the email configuration
         (

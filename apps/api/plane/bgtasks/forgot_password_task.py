@@ -13,6 +13,7 @@ from django.utils.html import strip_tags
 # Module imports
 from plane.license.utils.instance_value import get_email_configuration
 from plane.utils.exception_logger import log_exception
+from plane.bgtasks.email_utils import add_logo_to_context
 
 
 @shared_task
@@ -33,11 +34,11 @@ def forgot_password(first_name, email, uidb64, token, current_site):
 
         subject = "A new password to your AadyaBoard account has been requested"
 
-        context = {
+        context = add_logo_to_context({
             "first_name": first_name,
             "forgot_password_url": abs_url,
             "email": email,
-        }
+        })
 
         html_content = render_to_string("emails/auth/forgot_password.html", context)
 

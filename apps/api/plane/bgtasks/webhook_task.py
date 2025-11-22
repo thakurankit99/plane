@@ -211,12 +211,15 @@ def send_webhook_deactivation_email(webhook_id: str, receiver_id: str, current_s
         subject = "Webhook Deactivated"
         message = f"Webhook {webhook.url} has been deactivated due to failed requests."
 
+        # Import the utility function
+        from plane.bgtasks.email_utils import add_logo_to_context
+        
         # Send the mail
-        context = {
+        context = add_logo_to_context({
             "email": receiver.email,
             "message": message,
             "webhook_url": f"{current_site}/{str(webhook.workspace.slug)}/settings/webhooks/{str(webhook.id)}",
-        }
+        })
         html_content = render_to_string("emails/notifications/webhook-deactivate.html", context)
         text_content = strip_tags(html_content)
 

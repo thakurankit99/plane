@@ -14,6 +14,7 @@ from django.utils.html import strip_tags
 from plane.db.models import Project, ProjectMemberInvite, User
 from plane.license.utils.instance_value import get_email_configuration
 from plane.utils.exception_logger import log_exception
+from plane.bgtasks.email_utils import add_logo_to_context
 
 
 @shared_task
@@ -28,12 +29,12 @@ def project_invitation(email, project_id, token, current_site, invitor):
 
         subject = f"{user.first_name or user.display_name or user.email} invited you to join {project.name} on AadyaBoard"
 
-        context = {
+        context = add_logo_to_context({
             "email": email,
             "first_name": user.first_name,
             "project_name": project.name,
             "invitation_url": abs_url,
-        }
+        })
 
         html_content = render_to_string("emails/invitations/project_invitation.html", context)
 

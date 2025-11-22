@@ -235,9 +235,12 @@ def send_email_notification(issue_id, notification_data, receiver_id, email_noti
 
             summary = "Updates were made to the issue by"
 
+            # Import the utility function
+            from plane.bgtasks.email_utils import add_logo_to_context
+            
             # Send the mail
             subject = f"[AadyaBoard] {issue.project.identifier}-{issue.sequence_id} {remove_unwanted_characters(issue.name)}"
-            context = {
+            context = add_logo_to_context({
                 "data": template_data,
                 "summary": summary,
                 "actors_involved": len(set(actors_involved)),
@@ -254,7 +257,7 @@ def send_email_notification(issue_id, notification_data, receiver_id, email_noti
                 "user_preference": f"{base_api}/{str(issue.project.workspace.slug)}/settings/account/notifications/",
                 "comments": comments,
                 "entity_type": "issue",
-            }
+            })
             html_content = render_to_string("emails/notifications/issue-updates.html", context)
             text_content = strip_tags(html_content)
 

@@ -13,6 +13,7 @@ from django.utils.html import strip_tags
 from plane.db.models import User, Workspace, WorkspaceMemberInvite
 from plane.license.utils.instance_value import get_email_configuration
 from plane.utils.exception_logger import log_exception
+from plane.bgtasks.email_utils import add_logo_to_context
 
 
 @shared_task
@@ -44,12 +45,12 @@ def workspace_invitation(email, workspace_id, token, current_site, inviter):
         # Subject of the email
         subject = f"{user.first_name or user.display_name or user.email} has invited you to join them in {workspace.name} on AadyaBoard"  # noqa: E501
 
-        context = {
+        context = add_logo_to_context({
             "email": email,
             "first_name": user.first_name or user.display_name or user.email,
             "workspace_name": workspace.name,
             "abs_url": abs_url,
-        }
+        })
 
         html_content = render_to_string("emails/invitations/workspace_invitation.html", context)
 
