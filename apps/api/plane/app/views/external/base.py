@@ -62,10 +62,41 @@ class GeminiProvider(LLMProvider):
     default_model = "gemini-pro"
 
 
+class OpenRouterProvider(LLMProvider):
+    name = "OpenRouter"
+    # OpenRouter supports 100+ models - listing popular free and paid ones
+    models = [
+        # Free models
+        "tngtech/deepseek-r1t2-chimera:free",
+        "meta-llama/llama-3-8b-instruct:free",
+        "google/gemma-7b-it:free",
+        # OpenAI models
+        "openai/gpt-4o-mini",
+        "openai/gpt-4o",
+        "openai/gpt-3.5-turbo",
+        # Anthropic models
+        "anthropic/claude-3.5-sonnet",
+        "anthropic/claude-3-opus",
+        "anthropic/claude-3-haiku",
+        # Meta models
+        "meta-llama/llama-3.1-70b-instruct",
+        "meta-llama/llama-3.1-405b-instruct",
+        # Google models
+        "google/gemini-pro",
+        "google/gemini-flash-1.5",
+        # Mistral models
+        "mistralai/mistral-large",
+        "mistralai/mixtral-8x7b-instruct",
+    ]
+    default_model = "tngtech/deepseek-r1t2-chimera:free"
+    base_url = "https://openrouter.ai/api/v1"
+
+
 SUPPORTED_PROVIDERS = {
     "openai": OpenAIProvider,
     "anthropic": AnthropicProvider,
     "gemini": GeminiProvider,
+    "openrouter": OpenRouterProvider,
 }
 
 
@@ -104,8 +135,9 @@ def get_llm_config() -> Tuple[str | None, str | None, str | None]:
     if not model:
         model = provider.default_model
 
-    # Validate model is supported by provider
-    if model not in provider.models:
+    # For OpenRouter, skip model validation as it supports 100+ models
+    # For other providers, validate model is in the supported list
+    if provider_key.lower() != "openrouter" and model not in provider.models:
         log_exception(
             ValueError(
                 f"Model {model} not supported by {provider.name}. Supported models: {', '.join(provider.models)}"
@@ -120,11 +152,26 @@ def get_llm_response(task, prompt, api_key: str, model: str, provider: str) -> T
     """Helper to get LLM completion response"""
     final_text = task + "\n" + prompt
     try:
+        # Get provider configuration
+        provider_class = SUPPORTED_PROVIDERS.get(provider.lower())
+        
         # For Gemini, prepend provider name to model
         if provider.lower() == "gemini":
             model = f"gemini/{model}"
 
-        client = OpenAI(api_key=api_key)
+        # Create OpenAI client with custom base URL if provider supports it
+        client_kwargs = {"api_key": api_key}
+        if provider_class and hasattr(provider_class, 'base_url'):
+            client_kwargs["base_url"] = provider_class.base_url
+        
+        # Add extra headers for OpenRouter
+        if provider.lower() == "openrouter":
+            client_kwargs["default_headers"] = {
+                "HTTP-Referer": "https://jira.aadyatechnovate.com",
+                "X-Title": "AadyaBoard"
+            }
+        
+        client = OpenAI(**client_kwargs)
         chat_completion = client.chat.completions.create(
             model=model, messages=[{"role": "user", "content": final_text}]
         )
