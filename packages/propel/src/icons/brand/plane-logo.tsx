@@ -10,14 +10,14 @@ export const PlaneLogo: React.FC<ISvgIcons & { theme?: "light" | "dark" }> = ({
   theme 
 }) => {
   // Use inline SVG for AadyaBoard logo
-  // For dark theme/dark UI, use white logo
-  // For light theme/light UI, use dark logo
-  // Default to light theme (dark logo) if theme is not provided
+  // For dark theme/dark UI, use dark logo
+  // For light theme/light UI, use white logo
+  // Default to light theme (white logo) if theme is not provided
   const isDark = theme === "dark";
   
   return (
     <img 
-      src={isDark ? "/assets/plane-logos/aadya-logo-white.svg" : "/assets/plane-logos/aadya-logo-dark.svg"}
+      src={isDark ? "/assets/plane-logos/aadya-logo-dark.svg" : "/assets/plane-logos/aadya-logo-white.svg"}
       alt="AadyaBoard"
       style={{ width, height }}
       className={className}
