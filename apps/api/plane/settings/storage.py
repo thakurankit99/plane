@@ -53,7 +53,10 @@ class S3Storage(S3Boto3Storage):
                 aws_secret_access_key=self.aws_secret_access_key,
                 region_name=self.aws_region,
                 endpoint_url=self.aws_s3_endpoint_url,
-                config=boto3.session.Config(signature_version="s3v4"),
+                config=boto3.session.Config(
+                    signature_version="s3v4",
+                    s3={"addressing_style": "path"}
+                ),
             )
 
     def generate_presigned_post(self, object_name, file_type, file_size, expiration=3600):
