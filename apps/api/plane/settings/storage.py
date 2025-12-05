@@ -60,38 +60,31 @@ class S3Storage(S3Boto3Storage):
             )
 
     def generate_presigned_post(self, object_name, file_type, file_size, expiration=3600):
-        """Generate a presigned URL to upload an S3 object"""
-        fields = {"Content-Type": file_type}
-
-        conditions = [
-            {"bucket": self.aws_storage_bucket_name},
-            ["content-length-range", 1, file_size],
-            {"Content-Type": file_type},
-        ]
-
-        # Add condition for the object name (key)
-        if object_name.startswith("${filename}"):
-            conditions.append(["starts-with", "$key", object_name[: -len("${filename}")]])
-        else:
-            fields["key"] = object_name
-            conditions.append({"key": object_name})
-
-        # Generate the presigned POST URL
+        """Generate a presigned URL to upload an S3 object using PUT method (R2 compatible)"""
         try:
-            # Generate a presigned URL for the S3 object
-            response = self.s3_client.generate_presigned_post(
-                Bucket=self.aws_storage_bucket_name,
-                Key=object_name,
-                Fields=fields,
-                Conditions=conditions,
+            # Generate a presigned PUT URL for R2 compatibility
+            presigned_url = self.s3_client.generate_presigned_url(
+                'put_object',
+                Params={
+                    'Bucket': self.aws_storage_bucket_name,
+                    'Key': object_name,
+                    'ContentType': file_type,
+                },
                 ExpiresIn=expiration,
+                HttpMethod='PUT'
             )
-        # Handle errors
+            
+            # Return in a format compatible with the existing frontend
+            # Frontend expects {url, fields} but for PUT we only need url
+            response = {
+                'url': presigned_url,
+                'fields': {}  # Empty fields for PUT upload
+            }
+            return response
         except ClientError as e:
-            print(f"Error generating presigned POST URL: {e}")
+            print(f"Error generating presigned PUT URL: {e}")
+            log_exception(e)
             return None
-
-        return response
 
     def _get_content_disposition(self, disposition, filename=None):
         """Helper method to generate Content-Disposition header value"""
